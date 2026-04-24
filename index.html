@@ -184,36 +184,58 @@
             score: 0, isAns: false, mode: 'study', 
             tx: 0, ty: 0, isSwiping: false,
 
+            // File mapping logic
+            fileMap: {
+                "8": ["level8.json"],
+                "7": ["level7_part1.json", "level7_part2.json"],
+                "6": ["level6_part1.json", "level6_part2.json", "level6_part3.json"],
+                "5": ["level5_part1.json", "level5_part2.json", "level5_part3.json", "level5_part4.json"],
+                "4": ["level4_part1.json", "level4_part2.json", "level4_part3.json", "level4_part4.json", "level4_part5.json", "level4_part6.json", "level4_part7.json", "level4_part8.json", "level4_part9.json", "level4_part10.json"],
+                "3": ["level3_part1.json", "level3_part2.json", "level3_part3.json", "level3_part4.json", "level3_part5.json", "level3_part6.json", "level3_part7.json", "level3_part8.json", "level3_part9.json", "level3_part10.json", "level3_part11.json", "level3_part12.json", "level3_part13.json", "level3_part14.json", "level3_part15.json", "level3_part16.json"],
+                "2": ["level2_part1.json", "level2_part2.json", "level2_part3.json", "level2_part4.json", "level2_part5.json", "level2_part6.json", "level2_part7.json", "level2_part8.json", "level2_part9.json", "level2_part10.json", "level2_part11_final.json"],
+                "1": ["level1_part1.json", "level1_part2.json", "level1_part3.json", "level1_part4.json", "level1_part5.json", "level1_part6.json", "level1_part7.json", "level1_part8.json", "level1_part9.json", "level1_part10.json", "level1_part11.json", "level1_part12.json", "level1_part13.json", "level1_part14.json", "level1_part15.json", "level1_part16.json", "level1_part17.json", "level1_part18.json", "level1_part19.json", "level1_part20.json", "level1_part21.json", "level1_part22.json", "level1_part23_final.json"]
+            },
+
             async init() {
                 this.loadHistory();
                 await this.loadLevelData();
                 if(window.lucide) window.lucide.createIcons();
             },
 
-            // 📂 급수별 데이터 로딩 (파일명: level8.json, level7.json ...)
+            // 📂 급수별 데이터 로딩
             async loadLevelData() {
                 const lvl = document.getElementById('courseLevel').value;
                 const status = document.getElementById('statusMsg');
                 const label = document.getElementById('wordCountLabel');
+                const filesToLoad = this.fileMap[lvl];
                 
                 status.classList.remove('hidden');
                 label.textContent = "Loading...";
+                this.db = []; // Reset db
 
                 try {
-                    const res = await fetch(`./level${lvl}.json`);
-                    if(res.ok) {
-                        const json = await res.json();
-                        this.db = Array.isArray(json) ? json : (json.hanja || []);
+                    for (const file of filesToLoad) {
+                        const res = await fetch(`./${file}`);
+                        if(res.ok) {
+                            const json = await res.json();
+                            const data = Array.isArray(json) ? json : (json.hanja || []);
+                            this.db = this.db.concat(data);
+                        } else {
+                            console.warn(`File not found: ${file}`);
+                        }
+                    }
+                    
+                    if (this.db.length > 0) {
                         label.textContent = `${this.db.length.toLocaleString()} Hanja Loaded`;
                         this.renderGrid();
                     } else {
-                        throw new Error("File not found");
+                        throw new Error("No data loaded");
                     }
                 } catch(e) {
                     label.textContent = "Data File Missing";
                     document.getElementById('daysGrid').innerHTML = `
                         <div class="col-span-full py-10 text-center text-slate-400 font-bold">
-                            level${lvl}.json 파일을 찾을 수 없습니다.
+                            데이터 파일을 찾을 수 없습니다. (${e.message})
                         </div>
                     `;
                 } finally {
